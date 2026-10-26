@@ -1,0 +1,26 @@
+[Unit]
+Description=JP-PisoWiFi web application (customer portal and admin)
+After=jp-pisowifi-network.service
+Wants=jp-pisowifi-network.service
+
+[Service]
+Type=simple
+User=jp-pisowifi
+Group=jp-pisowifi
+UMask=0002
+Environment=JP_PISOWIFI_CONFIG=/etc/jp-pisowifi/config.json
+Environment=PYTHONUNBUFFERED=1
+WorkingDirectory=/opt/jp-pisowifi/current
+ExecStart=/opt/jp-pisowifi/venv/bin/gunicorn --workers 1 --threads 4 --bind 0.0.0.0:80 --timeout 30 --access-logfile - "backend.app:create_app()"
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/jp-pisowifi
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

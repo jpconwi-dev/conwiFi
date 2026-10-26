@@ -1,0 +1,29 @@
+{% extends "admin_base.html" %}
+{% block title %}Rates{% endblock %}
+{% block content %}
+<h1>Rates and coins</h1>
+<section class="card"><h2>Time per amount</h2>
+<p class="hint">Larger bundles are applied first. Any leftover amount is prorated from the smallest rate.</p>
+<div class="scroll"><table>
+<tr><th>Amount ({{ S.currency }})</th><th>Minutes</th><th>Enabled</th><th></th></tr>
+{% for r in rates %}
+<tr><form method="post">
+<td><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="id" value="{{ r.id }}"><input type="hidden" name="action" value="update">
+<input name="amount" type="number" min="1" value="{{ r.amount }}" required></td>
+<td><input name="minutes" type="number" min="1" value="{{ r.minutes }}" required></td>
+<td><input name="enabled" type="checkbox" {{ 'checked' if r.enabled }}></td>
+<td><button>Save</button></td></form>
+<td><form method="post" data-confirm="Delete this rate?"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ r.id }}"><button class="danger">Delete</button></form></td></tr>
+{% endfor %}
+</table></div>
+<form method="post" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="add">
+<label>Amount <input name="amount" type="number" min="1" required></label>
+<label>Minutes <input name="minutes" type="number" min="1" required></label>
+<button class="primary">Add rate</button></form>
+</section>
+<section class="card"><h2>Coin pulse mapping</h2>
+<p class="hint">One line per coin: <code>pulses=value</code>. This must match how the coin acceptor is programmed. Example: <code>5=5</code> means 5 pulses is a {{ S.currency }}5 coin.</p>
+<form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="pulses">
+<textarea name="pulse_map" rows="6" spellcheck="false">{{ pulse_text }}</textarea>
+<button class="primary">Save mapping</button></form></section>
+{% endblock %}

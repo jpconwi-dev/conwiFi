@@ -1,0 +1,22 @@
+{% extends "admin_base.html" %}
+{% block title %}Branding{% endblock %}
+{% block content %}
+<h1>Business name and portal appearance</h1>
+<form method="post" enctype="multipart/form-data" class="card">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+<label>Business name <input name="business_name" value="{{ S.business_name }}" maxlength="60" required></label>
+<label>Tagline <input name="tagline" value="{{ S.tagline }}" maxlength="140"></label>
+<label>Currency symbol <input name="currency" value="{{ S.currency }}" maxlength="4"></label>
+<label>Instructions shown to customers <textarea name="instructions" rows="4" maxlength="600">{{ S.instructions }}</textarea></label>
+<label>Support contact <input name="support_contact" value="{{ S.support_contact }}" maxlength="140" placeholder="Phone, Facebook page, or message"></label>
+<div class="inline">
+<label>Accent <input type="color" name="primary_color" value="{{ S.primary_color }}"></label>
+<label>Background <input type="color" name="background_color" value="{{ S.background_color }}"></label>
+<label>Text <input type="color" name="text_color" value="{{ S.text_color }}"></label>
+</div>
+<label>Logo (PNG, JPG or WEBP, max 512 KB) <input type="file" name="logo" accept="image/png,image/jpeg,image/webp"></label>
+{% if S.logo_file %}<p>Current logo: <img src="{{ url_for('uploads', name=S.logo_file) }}" alt="" height="48"></p>{% endif %}
+<button class="primary">Save</button>
+<p class="hint"><a href="{{ url_for('portal') }}" target="_blank" rel="noopener">Preview customer portal</a></p>
+</form>
+{% endblock %}

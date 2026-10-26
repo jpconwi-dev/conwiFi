@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Wrapper installed as /usr/local/bin/jp-pisowifi
+export JP_PISOWIFI_CONFIG="${JP_PISOWIFI_CONFIG:-/etc/jp-pisowifi/config.json}"
+cd /opt/jp-pisowifi/current || { echo "JP-PisoWiFi is not installed"; exit 1; }
+exec /opt/jp-pisowifi/venv/bin/python -m backend.cli "$@"

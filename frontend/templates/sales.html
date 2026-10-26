@@ -1,0 +1,25 @@
+{% extends "admin_base.html" %}
+{% block title %}Sales{% endblock %}
+{% block content %}
+<h1>Sales and payments</h1>
+<div class="grid">
+  <div class="stat"><span>Today</span><strong>{{ S.currency }}{{ today }}</strong></div>
+  <div class="stat"><span>Total credited</span><strong>{{ S.currency }}{{ total }}</strong></div>
+  <div class="stat"><span>Unassigned coins</span><strong>{{ S.currency }}{{ unassigned }}</strong></div>
+</div>
+<p><a href="{{ url_for('admin_sales_csv') }}">Download all payments (CSV)</a></p>
+<div class="cols">
+<section class="card"><h2>Daily sales (last 30 days)</h2><table>
+<tr><th>Date</th><th>Coins</th><th>Total</th></tr>
+{% for d in days %}<tr><td>{{ d.sale_date }}</td><td>{{ d.coins }}</td><td>{{ S.currency }}{{ d.total }}</td></tr>{% else %}<tr><td colspan="3">No sales yet.</td></tr>{% endfor %}
+</table></section>
+<section class="card"><h2>Coin events (diagnostics)</h2><div class="scroll"><table>
+<tr><th>Time</th><th>Pulses</th><th>Value</th><th>Source</th><th>Result</th></tr>
+{% for e in events %}<tr><td>{{ e.created_at|dt }}</td><td>{{ e.pulses if e.pulses is not none else '-' }}</td><td>{{ e.value if e.value is not none else '-' }}</td><td>{{ e.source }}</td><td>{{ e.status }}</td></tr>{% else %}<tr><td colspan="5">No coin events.</td></tr>{% endfor %}
+</table></div></section>
+</div>
+<section class="card"><h2>Payments</h2><div class="scroll"><table>
+<tr><th>Time</th><th>Payment ID</th><th>Amount</th><th>Credited</th><th>Status</th><th>Client</th></tr>
+{% for p in payments %}<tr><td>{{ p.created_at|dt }}</td><td><small>{{ p.payment_id }}</small></td><td>{{ S.currency }}{{ p.amount }}</td><td>{{ p.credited_seconds|dur }}</td><td>{{ p.status }}</td><td>{{ p.mac or '-' }}</td></tr>{% endfor %}
+</table></div></section>
+{% endblock %}

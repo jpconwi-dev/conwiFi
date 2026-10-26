@@ -1,0 +1,25 @@
+[Unit]
+Description=JP-PisoWiFi coin acceptor service
+After=jp-pisowifi-network.service
+
+[Service]
+Type=simple
+User=jp-pisowifi
+Group=jp-pisowifi
+SupplementaryGroups=gpio
+UMask=0002
+Environment=JP_PISOWIFI_CONFIG=/etc/jp-pisowifi/config.json
+Environment=PYTHONUNBUFFERED=1
+WorkingDirectory=/opt/jp-pisowifi/current
+ExecStart=/opt/jp-pisowifi/venv/bin/python -m backend.coin_daemon
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/jp-pisowifi
+# Exit code 3 = misconfiguration (GPIO not verified/enabled). Do not restart-loop on that.
+RestartPreventExitStatus=3
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,37 @@
+{% extends "admin_base.html" %}
+{% block title %}Network{% endblock %}
+{% block content %}
+<h1>Network and bandwidth</h1>
+{% if pending_left is not none %}
+<section class="card warnbox"><h2>Confirm network change</h2>
+<p>A change was applied. If you can see this page on the new address, confirm it. Otherwise it rolls back automatically in about <strong>{{ pending_left if pending_left > 0 else 0 }}</strong> seconds.</p>
+<form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="confirm"><button class="primary">Confirm</button></form></section>
+{% endif %}
+<section class="card"><h2>Interfaces</h2>
+<p>WAN: <strong>{{ net.wan_iface or 'not set' }}</strong> &nbsp; LAN: <strong>{{ net.lan_iface or 'not set' }}</strong> (set in <code>/etc/jp-pisowifi/config.json</code>)</p>
+<table><tr><th>Interface</th><th>MAC</th><th>Type</th><th>State</th></tr>
+{% for i in ifaces %}<tr><td>{{ i.name }}</td><td>{{ i.mac }}</td><td>{{ 'USB' if i.usb else 'built-in' }} ({{ i.driver }})</td><td>{{ i.up }}</td></tr>{% else %}<tr><td colspan="4">None detected (normal in simulation mode).</td></tr>{% endfor %}
+</table></section>
+<section class="card"><h2>Customer LAN (Orange Pi)</h2>
+<form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="lan">
+<div class="inline">
+<label>Gateway IP <input name="lan_ip" value="{{ net.lan_ip }}" required></label>
+<label>Prefix <input name="lan_prefix" type="number" min="16" max="29" value="{{ net.lan_prefix }}" required></label>
+<label>DHCP start <input name="dhcp_start" value="{{ net.dhcp_start }}" required></label>
+<label>DHCP end <input name="dhcp_end" value="{{ net.dhcp_end }}" required></label>
+<label>Lease <input name="dhcp_lease" value="{{ net.dhcp_lease }}" pattern="\d+[mhd]"></label>
+<label>DNS servers (comma separated) <input name="dns" value="{{ net.dns_servers|join(', ') }}"></label>
+</div>
+<button class="primary" data-confirm-text="Changing the gateway address will disconnect everyone. Continue?">Validate and apply</button>
+<p class="hint">The change is validated first, then applied with an automatic rollback unless you confirm it from the new address.</p>
+</form></section>
+<section class="card"><h2>Default speed limits for new sessions</h2>
+<form method="post" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="speed">
+<label>Download kbps (0 = unlimited) <input name="down" type="number" min="0" value="{{ S.default_down_kbps }}"></label>
+<label>Upload kbps (0 = unlimited) <input name="up" type="number" min="0" value="{{ S.default_up_kbps }}"></label>
+<button class="primary">Save</button></form>
+<p class="hint">Limits are applied per client IP with Linux traffic control and have not been validated on hardware yet.</p></section>
+<section class="card"><h2>Settings that live on the external WiFi router (not here)</h2>
+<ul><li>WiFi name (SSID), password and radio channel</li><li>AP/bridge mode, its DHCP server must be OFF</li><li>Its own management IP (use an address outside the DHCP range)</li><li>Client isolation must be OFF or customers cannot reach the portal</li></ul></section>
+{% if fw %}<section class="card"><h2>Active firewall rules</h2><pre>{{ fw.ruleset }}</pre></section>{% endif %}
+{% endblock %}

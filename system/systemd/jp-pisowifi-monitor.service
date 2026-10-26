@@ -1,0 +1,21 @@
+[Unit]
+Description=JP-PisoWiFi monitor (session expiry, firewall sync, recovery, backups)
+After=jp-pisowifi-network.service
+Wants=jp-pisowifi-network.service
+
+[Service]
+Type=simple
+# Runs as root only because it edits nftables/tc/dnsmasq. It exposes no network port.
+User=root
+UMask=0002
+Environment=JP_PISOWIFI_CONFIG=/etc/jp-pisowifi/config.json
+Environment=PYTHONUNBUFFERED=1
+WorkingDirectory=/opt/jp-pisowifi/current
+ExecStart=/opt/jp-pisowifi/venv/bin/python -m backend.monitor
+NoNewPrivileges=yes
+PrivateTmp=yes
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

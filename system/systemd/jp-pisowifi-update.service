@@ -1,0 +1,8 @@
+[Unit]
+Description=JP-PisoWiFi software update (triggered from the admin panel)
+
+[Service]
+Type=oneshot
+Environment=JP_PISOWIFI_CONFIG=/etc/jp-pisowifi/config.json
+WorkingDirectory=/opt/jp-pisowifi/current
+ExecStart=/opt/jp-pisowifi/venv/bin/python -m backend.cli update-from-request

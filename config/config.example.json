@@ -1,0 +1,38 @@
+{
+  "simulation_mode": true,
+  "data_dir": "./data",
+  "min_valid_epoch": 1767225600,
+  "network": {
+    "wan_iface": "",
+    "lan_iface": "",
+    "lan_ip": "10.0.0.1",
+    "lan_prefix": 24,
+    "dhcp_start": "10.0.0.50",
+    "dhcp_end": "10.0.0.250",
+    "dhcp_lease": "1h",
+    "dns_servers": ["1.1.1.1", "8.8.8.8"],
+    "confirm_seconds": 120
+  },
+  "coin": {
+    "gpio_chip": "gpiochip0",
+    "gpio_line": null,
+    "active_low": true,
+    "debounce_ms": 20,
+    "pulse_timeout_ms": 400,
+    "claim_seconds": 30,
+    "hardware_verified": false
+  },
+  "update": {
+    "repo_url": "",
+    "require_signed_tag": false,
+    "install_dir": "/opt/jp-pisowifi",
+    "keep_releases": 3
+  },
+  "backup": { "retention": 14, "interval_hours": 24 },
+  "security": {
+    "session_minutes": 30,
+    "login_max_failures": 5,
+    "login_window_minutes": 15,
+    "cookie_secure": false
+  }
+}

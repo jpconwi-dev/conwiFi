@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<title>{% block title %}{{ S.business_name }}{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('branding_css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/portal.css') }}">
+</head>
+<body>
+<main class="wrap">
+<header class="brand">
+  {% if S.logo_file %}<img class="logo" src="{{ url_for('uploads', name=S.logo_file) }}" alt="">{% endif %}
+  <h1>{{ S.business_name }}</h1>
+</header>
+{% block content %}{% endblock %}
+<footer class="foot">
+  {% if S.support_contact %}<p>Need help? {{ S.support_contact }}</p>{% endif %}
+  {% if sim_mode %}<p class="sim">Simulation mode: no real coins or network control.</p>{% endif %}
+</footer>
+</main>
+{% block scripts %}{% endblock %}
+</body>
+</html>

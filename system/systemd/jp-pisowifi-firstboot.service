@@ -1,0 +1,12 @@
+[Unit]
+Description=JP-PisoWiFi first-boot provisioning
+ConditionPathExists=!/var/lib/jp-pisowifi/.provisioned
+After=network.target
+Before=jp-pisowifi-network.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/jp-pisowifi/current/installer/first_boot.sh
+
+[Install]
+WantedBy=multi-user.target

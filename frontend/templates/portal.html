@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<p class="tagline">{{ S.tagline }}</p>
+
+<section id="banner" class="banner" hidden role="status"></section>
+
+{% include "client_dashboard.html" %}
+
+<section class="panel" id="buy">
+  <h2>Rates</h2>
+  <ul class="rates">
+    {% for r in rates %}
+    <li><span class="price">{{ S.currency }}{{ r.amount }}</span><span class="mins">{{ (r.minutes * 60)|dur }}</span></li>
+    {% else %}
+    <li>No rates are configured yet.</li>
+    {% endfor %}
+  </ul>
+  <div id="coin-idle">
+    <button id="btn-start" class="primary">Insert coin</button>
+  </div>
+  <div id="coin-active" hidden>
+    <p class="slot">Coin slot is open for you: <strong id="claim-left">30</strong>s</p>
+    <p>Drop your coins now. Time is added as each coin is counted.</p>
+    <button id="btn-cancel" class="ghost">Done</button>
+  </div>
+  <div id="sim-panel" hidden>
+    <p class="small">Simulated coins:</p>
+    <div id="sim-buttons"></div>
+  </div>
+  <p class="instr">{{ S.instructions }}</p>
+</section>
+
+<section class="panel small" id="net-status">
+  <span>Internet: <strong id="inet">checking</strong></span>
+  <button id="btn-check" class="ghost">Check connection</button>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/portal.js') }}"></script>{% endblock %}

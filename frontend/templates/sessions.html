@@ -1,0 +1,19 @@
+{% extends "admin_base.html" %}
+{% block title %}Sessions{% endblock %}
+{% block content %}
+<h1>Sessions and clients</h1>
+<section class="card" data-autorefresh="30"><h2>Active sessions ({{ active|length }})</h2>
+<div class="scroll"><table>
+<tr><th>Client</th><th>IP</th><th>Remaining</th><th>Expires</th><th>Limit (kbps down/up)</th><th></th></tr>
+{% for s in active %}<tr><td>{{ s.hostname or s.mac }}<br><small>{{ s.mac }}</small></td><td>{{ s.ip or '-' }}</td>
+<td>{{ (s.expires_at - now)|dur }}</td><td>{{ s.expires_at|dt }}</td><td>{{ s.down_kbps or '&infin;'|safe }} / {{ s.up_kbps or '&infin;'|safe }}</td>
+<td><form method="post" data-confirm="Disconnect this customer? Remaining time is lost."><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="disconnect"><input type="hidden" name="id" value="{{ s.id }}"><button class="danger">Disconnect</button></form></td></tr>
+{% else %}<tr><td colspan="6">No active sessions.</td></tr>{% endfor %}
+</table></div></section>
+<section class="card"><h2>Known clients</h2>
+<div class="scroll"><table>
+<tr><th>MAC</th><th>IP</th><th>Name</th><th>Last seen</th><th>Status</th><th></th></tr>
+{% for c in clients %}<tr><td>{{ c.mac }}</td><td>{{ c.ip or '-' }}</td><td>{{ c.hostname or '-' }}</td><td>{{ c.last_seen|dt }}</td><td>{{ 'blocked' if c.blocked else 'ok' }}</td>
+<td><form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="id" value="{{ c.id }}"><input type="hidden" name="action" value="{{ 'unblock' if c.blocked else 'block' }}"><button>{{ 'Unblock' if c.blocked else 'Block' }}</button></form></td></tr>
+{% endfor %}</table></div></section>
+{% endblock %}

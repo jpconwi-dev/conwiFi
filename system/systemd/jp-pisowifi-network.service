@@ -1,0 +1,19 @@
+[Unit]
+Description=JP-PisoWiFi network (LAN address, forwarding, firewall, DHCP)
+After=network.target local-fs.target
+Before=jp-pisowifi.service jp-pisowifi-monitor.service
+Wants=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Environment=JP_PISOWIFI_CONFIG=/etc/jp-pisowifi/config.json
+WorkingDirectory=/opt/jp-pisowifi/current
+ExecStart=/opt/jp-pisowifi/venv/bin/python -m backend.cli network-up
+ExecStop=/opt/jp-pisowifi/venv/bin/python -m backend.cli firewall-restore
+# The USB Ethernet adapter can appear a few seconds after boot: retry instead of failing for good.
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

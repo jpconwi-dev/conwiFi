@@ -1,0 +1,37 @@
+{% extends "admin_base.html" %}
+{% block title %}Overview{% endblock %}
+{% block content %}
+<h1>Overview</h1>
+<div class="grid" data-autorefresh="30">
+  <div class="stat"><span>Today's sales</span><strong>{{ S.currency }}{{ today }}</strong></div>
+  <div class="stat"><span>Total recorded sales</span><strong>{{ S.currency }}{{ total }}</strong></div>
+  <div class="stat"><span>Active sessions</span><strong>{{ active }}</strong></div>
+  <div class="stat"><span>Clients seen (5 min)</span><strong>{{ clients }}</strong></div>
+</div>
+{% if unassigned %}<p class="flash warn">{{ S.currency }}{{ unassigned }} in coins were inserted with no customer waiting (unassigned). See Sales.</p>{% endif %}
+<div class="cols">
+<section class="card"><h2>Status</h2>
+<table>
+<tr><th>Internet</th><td>{{ comp.internet }}</td></tr>
+<tr><th>WAN ({{ net.wan_iface or 'not set' }})</th><td>{{ wan.up if wan else 'not detected' }}</td></tr>
+<tr><th>LAN ({{ net.lan_iface or 'not set' }})</th><td>{{ lan.up if lan else 'not detected' }} &middot; {{ net.lan_ip }}/{{ net.lan_prefix }}</td></tr>
+<tr><th>Monitor service</th><td>{{ 'running' if comp.monitor_alive else 'NOT RUNNING' }}</td></tr>
+<tr><th>Coin acceptor</th><td>{{ ('running (' ~ comp.coin_mode ~ ')') if comp.coin_alive else 'NOT RUNNING' }}</td></tr>
+<tr><th>Maintenance mode</th><td>{{ 'ON' if S.maintenance_mode == '1' else 'off' }}</td></tr>
+</table></section>
+<section class="card"><h2>System</h2>
+<table>
+<tr><th>Uptime</th><td>{{ (stats.uptime_s|dur) if stats.uptime_s is not none else 'n/a' }}</td></tr>
+<tr><th>CPU temperature</th><td>{{ stats.cpu_temp_c if stats.cpu_temp_c is not none else 'n/a' }}{{ ' &deg;C'|safe if stats.cpu_temp_c is not none }}</td></tr>
+<tr><th>RAM free</th><td>{{ stats.ram_free_mb if stats.ram_free_mb is not none else 'n/a' }} / {{ stats.ram_total_mb }} MB</td></tr>
+<tr><th>Storage used</th><td>{{ stats.disk_used_gb }} / {{ stats.disk_total_gb }} GB</td></tr>
+<tr><th>Version</th><td>{{ version }}</td></tr>
+</table></section>
+</div>
+<section class="card"><h2>Recent payments</h2>
+<div class="scroll"><table>
+<tr><th>Time</th><th>Amount</th><th>Credited</th><th>Status</th><th>Client</th></tr>
+{% for p in payments %}<tr><td>{{ p.created_at|dt }}</td><td>{{ S.currency }}{{ p.amount }}</td><td>{{ p.credited_seconds|dur }}</td><td>{{ p.status }}</td><td>{{ p.mac or '-' }}</td></tr>
+{% else %}<tr><td colspan="5">No payments yet.</td></tr>{% endfor %}
+</table></div></section>
+{% endblock %}

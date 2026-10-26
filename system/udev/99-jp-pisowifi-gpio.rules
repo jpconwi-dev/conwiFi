@@ -1,0 +1,2 @@
+# Let members of the gpio group open GPIO character devices (needed by the coin service).
+SUBSYSTEM=="gpio", KERNEL=="gpiochip*", GROUP="gpio", MODE="0660"
