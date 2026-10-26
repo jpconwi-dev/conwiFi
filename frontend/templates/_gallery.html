@@ -1,0 +1,12 @@
+{% if gallery %}
+<section class="gallery" aria-label="Pictures" tabindex="0">
+  {% for i in gallery %}
+  <figure class="slide">
+    {% if i.link %}<a href="{{ i.link }}" target="_blank" rel="noopener noreferrer">{% endif %}
+    <img src="{{ url_for('uploads', name=i.file) }}" alt="{{ i.title }}" loading="lazy" decoding="async">
+    {% if i.link %}</a>{% endif %}
+    {% if i.title %}<figcaption>{{ i.title }}</figcaption>{% endif %}
+  </figure>
+  {% endfor %}
+</section>
+{% endif %}

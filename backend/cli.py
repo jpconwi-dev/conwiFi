@@ -1,12 +1,16 @@
 """jp-pisowifi command line: python -m backend.cli <command>"""
 import argparse
-import grp
 import json
 import os
 import secrets
 import subprocess
 import sys
 from pathlib import Path
+
+try:
+    import grp  # Linux/Unix only
+except ImportError:  # Windows development machine
+    grp = None
 
 from . import auth, backup_service, client_service, clock, network_service as ns, payment_service, updater
 from .config import VERSION, load_config, paths
@@ -19,7 +23,7 @@ SERVICES = ["jp-pisowifi", "jp-pisowifi-monitor", "jp-pisowifi-coin", "dnsmasq"]
 
 def fix_permissions(cfg):
     """Root-run commands must leave the data dir writable by the service account."""
-    if os.geteuid() != 0:
+    if grp is None or not hasattr(os, "geteuid") or os.geteuid() != 0:
         return
     try:
         gid = grp.getgrnam("jp-pisowifi").gr_gid
@@ -196,6 +200,9 @@ def cmd_trust_clock(cfg, a):
 
 
 def cmd_sim_coin(cfg, a):
+    if not (cfg["simulation_mode"] or cfg["coin"].get("test_mode")):
+        print("sim-coin is disabled in production (needs simulation_mode or coin.test_mode).", file=sys.stderr)
+        return 1
     conn = init_db(cfg)
     res = payment_service.record_coin(conn, secrets.token_hex(8), a.value, a.value, "simulation",
                                       int(cfg["coin"]["claim_seconds"]))

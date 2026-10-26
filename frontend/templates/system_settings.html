@@ -12,6 +12,12 @@
 <label>Maximum time per customer (minutes) <input name="max_minutes" type="number" min="1" max="10080" value="{{ max_minutes }}"></label>
 <button class="primary">Save</button></form></section>
 </div>
+<section class="card"><h2>Pause</h2>
+<form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="pause_settings">
+<label><input type="checkbox" name="pause_enabled" {{ 'checked' if S.pause_enabled == '1' }}> Let customers pause their time</label>
+<label>Longest pause (minutes) <input name="max_pause" type="number" min="1" max="1440" value="{{ max_pause }}"></label>
+<p class="hint">While paused the customer has no internet and the time is frozen. If they do not resume in time the saved time is lost.</p>
+<button class="primary">Save</button></form></section>
 <section class="card"><h2>Services</h2>
 {% if services %}<table>{% for n, s in services.items() %}<tr><th>{{ n }}</th><td>{{ s }}</td></tr>{% endfor %}</table>
 {% else %}<p>Service status is not available in simulation mode.</p>{% endif %}

@@ -37,6 +37,9 @@ COIN pin ---[R ~1.2-1.5 kΩ]---> opto LED(+)    opto transistor collector ---> G
   rising edge. If the pulse is shorter than ~20 ms, lower `coin.debounce_ms`. Check pulse width on a scope or logic analyser if you have one.
 - Keep the acceptor on its own 12 V supply; common-ground the two sides only through the opto-isolated path.
 
+## 3b. Testing the whole system before wiring
+Set `coin.test_mode` to `true` in `/etc/jp-pisowifi/config.json` and restart `jp-pisowifi` and `jp-pisowifi-coin`. The portal then shows simulated coin buttons while the real firewall, DHCP and speed limits stay active. Anyone who can open the portal can press them for free time, so use it only while you test, then set it back to `false`. It switches itself off once `hardware_verified` is true.
+
 ## 4. Enabling GPIO in software
 1. `sudo jp-pisowifi` services are installed; the coin service exits with code 3 until configured.
 2. Edit `/etc/jp-pisowifi/config.json`: `"gpio_chip": "gpiochip0"`, `"gpio_line": <number>`, `"hardware_verified": true`.

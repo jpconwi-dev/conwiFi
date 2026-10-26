@@ -2,24 +2,25 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="{{ S.background_color }}">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}{{ S.business_name }}{% endblock %}</title>
 <link rel="stylesheet" href="{{ url_for('branding_css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/portal.css') }}">
 </head>
 <body>
-<main class="wrap">
-<header class="brand">
-  {% if S.logo_file %}<img class="logo" src="{{ url_for('uploads', name=S.logo_file) }}" alt="">{% endif %}
-  <h1>{{ S.business_name }}</h1>
-</header>
+<div class="wrap">
 {% block content %}{% endblock %}
 <footer class="foot">
   {% if S.support_contact %}<p>Need help? {{ S.support_contact }}</p>{% endif %}
-  {% if sim_mode %}<p class="sim">Simulation mode: no real coins or network control.</p>{% endif %}
+  {% if sim_mode %}<p class="devnote">Simulation mode: no real coins or network control.</p>
+  {% elif test_mode %}<p class="devnote">TEST MODE: the coin buttons give free time. Disable before opening to customers.</p>{% endif %}
 </footer>
-</main>
+</div>
 {% block scripts %}{% endblock %}
 </body>
 </html>

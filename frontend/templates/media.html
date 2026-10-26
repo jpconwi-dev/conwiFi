@@ -1,0 +1,56 @@
+{% extends "admin_base.html" %}
+{% block title %}Pictures and sounds{% endblock %}
+{% block content %}
+<h1>Customer dashboard: pictures, text and sounds</h1>
+
+<section class="card"><h2>Dashboard text</h2>
+<p class="hint">Shown to customers while they are connected.</p>
+<form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="dash_text">
+<label>Title <input name="dashboard_title" value="{{ S.dashboard_title }}" maxlength="60"></label>
+<label>Message <textarea name="dashboard_message" rows="3" maxlength="300" placeholder="Example: Wifi password for the shop: ... / Promo today: ...">{{ S.dashboard_message }}</textarea></label>
+<button class="primary">Save text</button></form></section>
+
+<section class="card"><h2>Pictures</h2>
+<p class="hint">PNG, JPG or WEBP, up to 1 MB each. Wide 16:9 pictures (for example 1280x720) fit best. Customers swipe through them.</p>
+<form method="post" enctype="multipart/form-data" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="add_image">
+<label>Picture <input type="file" name="image" accept="image/png,image/jpeg,image/webp" required></label>
+<label>Caption (optional) <input name="title" maxlength="80"></label>
+<label>Link (optional, https://...) <input name="link" maxlength="200" inputmode="url" placeholder="https://"></label>
+<label>Show on <select name="show_on"><option value="both">Start screen and dashboard</option><option value="dashboard">Dashboard only (connected)</option><option value="portal">Start screen only (before paying)</option></select></label>
+<button class="primary">Add picture</button></form>
+<div class="thumbs">
+{% for i in images %}
+<form method="post" class="thumb"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="id" value="{{ i.id }}">
+<img src="{{ url_for('uploads', name=i.file) }}" alt="{{ i.title }}">
+<label>Caption <input name="title" value="{{ i.title }}" maxlength="80"></label>
+<label>Link <input name="link" value="{{ i.link }}" maxlength="200" inputmode="url"></label>
+<label>Show on <select name="show_on">
+<option value="both" {{ 'selected' if i.show_on == 'both' }}>Start screen and dashboard</option>
+<option value="dashboard" {{ 'selected' if i.show_on == 'dashboard' }}>Dashboard only</option>
+<option value="portal" {{ 'selected' if i.show_on == 'portal' }}>Start screen only</option></select></label>
+<label>Order <input name="sort_order" type="number" min="0" max="9999" value="{{ i.sort_order }}"></label>
+<label><input type="checkbox" name="enabled" {{ 'checked' if i.enabled }}> Visible</label>
+<div class="row"><button name="action" value="update_image">Save</button>
+<button name="action" value="delete_image" class="danger" data-confirm-text="Delete this picture?">Delete</button></div></form>
+{% else %}<p>No pictures yet.</p>{% endfor %}
+</div></section>
+
+<section class="card"><h2>Sound effects</h2>
+<p class="hint">Short clips (under 700 KB): MP3 or M4A work on every phone, WAV is fine, OGG does not play on iPhones. Phones only allow sound after the customer has tapped the page once, and customers can mute with the speaker button.</p>
+<form method="post" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="sound_settings">
+<label><input type="checkbox" name="sounds_enabled" {{ 'checked' if S.sounds_enabled == '1' }}> Play sounds</label>
+<label>Volume (0-100) <input name="volume" type="number" min="0" max="100" value="{{ S.sound_volume }}"></label>
+<label>"Time almost over" at (seconds left) <input name="low_time" type="number" min="5" max="600" value="{{ S.low_time_seconds }}"></label>
+<button class="primary">Save</button></form>
+<div class="scroll"><table>
+<tr><th>When</th><th>Current sound</th><th>Replace</th></tr>
+{% for key, label, file in sounds %}
+<tr><td>{{ label }}</td>
+<td>{% if file %}<audio controls preload="none" src="{{ url_for('uploads', name=file) }}"></audio>
+<form method="post" data-confirm="Remove this sound?"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="sound_remove"><input type="hidden" name="event" value="{{ key }}"><button class="danger">Remove</button></form>{% else %}<small>none</small>{% endif %}</td>
+<td><form method="post" enctype="multipart/form-data" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="sound_upload"><input type="hidden" name="event" value="{{ key }}">
+<input type="file" name="sound" accept="audio/mpeg,audio/mp4,audio/wav,audio/ogg,.mp3,.m4a,.wav,.ogg" required><button>Upload</button></form></td></tr>
+{% endfor %}
+</table></div></section>
+<p><a href="{{ url_for('portal') }}" target="_blank" rel="noopener">Preview customer portal</a></p>
+{% endblock %}

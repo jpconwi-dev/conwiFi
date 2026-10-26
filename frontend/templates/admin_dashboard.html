@@ -6,6 +6,7 @@
   <div class="stat"><span>Today's sales</span><strong>{{ S.currency }}{{ today }}</strong></div>
   <div class="stat"><span>Total recorded sales</span><strong>{{ S.currency }}{{ total }}</strong></div>
   <div class="stat"><span>Active sessions</span><strong>{{ active }}</strong></div>
+  <div class="stat"><span>Paused</span><strong>{{ paused }}</strong></div>
   <div class="stat"><span>Clients seen (5 min)</span><strong>{{ clients }}</strong></div>
 </div>
 {% if unassigned %}<p class="flash warn">{{ S.currency }}{{ unassigned }} in coins were inserted with no customer waiting (unassigned). See Sales.</p>{% endif %}

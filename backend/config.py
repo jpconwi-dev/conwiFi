@@ -35,6 +35,7 @@ DEFAULTS = {
         "pulse_timeout_ms": 400,
         "claim_seconds": 30,
         "hardware_verified": False,
+        "test_mode": False,
     },
     "update": {
         "repo_url": "",

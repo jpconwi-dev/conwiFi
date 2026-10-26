@@ -6,7 +6,7 @@ Record date, Armbian version, result. Do not mark anything passed unless you ran
 - [ ] Phone joins WiFi, gets 10.0.0.x address from the Pi (AP's own DHCP is off; `sudo journalctl -u dnsmasq`)
 - [ ] Before paying: phone gets the portal prompt; `curl http://example.com` from the phone shows the portal; HTTPS sites fail
 - [ ] Before paying: phone cannot reach `http://<Pi WAN IP>/admin` (expect 404)
-- [ ] After a simulated coin (`sudo jp-pisowifi sim-coin 5` only valid in simulation) or real coin: internet works within ~3 s
+- [ ] After a coin: internet works within ~3 s. Before the acceptor is wired, set `"test_mode": true` under `coin` in `/etc/jp-pisowifi/config.json`, `sudo systemctl restart jp-pisowifi jp-pisowifi-coin`, and use the portal's simulated coin buttons (real firewall, fake coins; FREE TIME for anyone, so set it back to false afterwards)
 - [ ] `sudo nft list set inet jp_pisowifi authorized` shows the phone's MAC with a timeout
 - [ ] At expiry the phone loses internet; existing downloads stop
 - [ ] Speed limit: `speedtest` on phone matches limit; `tc -s class show dev <lan>`

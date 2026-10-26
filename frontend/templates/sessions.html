@@ -10,6 +10,13 @@
 <td><form method="post" data-confirm="Disconnect this customer? Remaining time is lost."><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="disconnect"><input type="hidden" name="id" value="{{ s.id }}"><button class="danger">Disconnect</button></form></td></tr>
 {% else %}<tr><td colspan="6">No active sessions.</td></tr>{% endfor %}
 </table></div></section>
+<section class="card"><h2>Paused sessions ({{ paused|length }})</h2>
+<div class="scroll"><table>
+<tr><th>Client</th><th>Time saved</th><th>Paused since</th><th></th></tr>
+{% for s in paused %}<tr><td>{{ s.hostname or s.mac }}<br><small>{{ s.mac }}</small></td><td>{{ s.paused_remaining|dur }}</td><td>{{ s.paused_at|dt }}</td>
+<td><form method="post" data-confirm="End this paused session? The saved time is lost."><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="disconnect"><input type="hidden" name="id" value="{{ s.id }}"><button class="danger">End</button></form></td></tr>
+{% else %}<tr><td colspan="4">None.</td></tr>{% endfor %}
+</table></div></section>
 <section class="card"><h2>Known clients</h2>
 <div class="scroll"><table>
 <tr><th>MAC</th><th>IP</th><th>Name</th><th>Last seen</th><th>Status</th><th></th></tr>

@@ -240,6 +240,36 @@ class NonSimGuardTests(TempEnv):
         finally:
             client_service.mac_for_ip = orig
 
+    def test_test_mode_enables_sim_coins_with_real_networking(self):
+        from backend import client_service
+        self.cfg["coin"]["test_mode"] = True
+        app = create_app(self.cfg)
+        orig = client_service.mac_for_ip
+        client_service.mac_for_ip = lambda ip: "aa:bb:cc:dd:ee:09"
+        try:
+            c = app.test_client()
+            env = {"REMOTE_ADDR": "10.0.0.77"}
+            html = c.get("/", environ_overrides=env).data.decode()
+            self.assertIn("TEST MODE", html)
+            tok = re.search(r'name="csrf-token" content="([^"]+)"', html).group(1)
+            hdr = {"X-CSRF-Token": tok}
+            self.assertEqual(c.get("/api/status", environ_overrides=env).json["simulation"], True)
+            self.assertEqual(c.post("/api/coin/start", headers=hdr, environ_overrides=env).status_code, 200)
+            r = c.post("/api/sim/coin", data=json.dumps({"value": 5}), content_type="application/json",
+                       headers=hdr, environ_overrides=env)
+            self.assertEqual(r.json["status"], "credited")
+        finally:
+            client_service.mac_for_ip = orig
+
+    def test_sim_coin_route_is_closed_without_test_mode(self):
+        app = create_app(self.cfg)
+        c = app.test_client()
+        html = c.get("/", environ_overrides={"REMOTE_ADDR": "10.0.0.77"}).data.decode()
+        tok = re.search(r'name="csrf-token" content="([^"]+)"', html).group(1)
+        r = c.post("/api/sim/coin", data="{}", content_type="application/json",
+                   headers={"X-CSRF-Token": tok}, environ_overrides={"REMOTE_ADDR": "10.0.0.77"})
+        self.assertEqual(r.status_code, 404)
+
     def test_foreign_host_redirects_to_portal(self):
         app = create_app(self.cfg)
         r = app.test_client().get("/generate_204", headers={"Host": "connectivitycheck.gstatic.com"},

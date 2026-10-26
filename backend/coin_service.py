@@ -113,7 +113,8 @@ def process_group(conn, cfg: dict, pulses: int, source: str) -> dict:
 def run_daemon(cfg: dict, conn, source=None, stop=lambda: False):
     coin_cfg = cfg["coin"]
     if source is None:
-        source = SimulatedSource() if cfg["simulation_mode"] else GpioSource(coin_cfg)
+        use_sim = cfg["simulation_mode"] or (coin_cfg.get("test_mode") and not coin_cfg.get("hardware_verified"))
+        source = SimulatedSource() if use_sim else GpioSource(coin_cfg)
     grouper = PulseGrouper(coin_cfg["debounce_ms"], coin_cfg["pulse_timeout_ms"])
     set_setting(conn, "coin_daemon_mode", source.mode)
     last_hb = 0.0

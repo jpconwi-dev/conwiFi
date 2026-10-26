@@ -32,6 +32,24 @@ DEFAULT_SETTINGS = {
     "coin_daemon_mode": "unknown",
     "last_update_result": "",
     "last_backup_at": "0",
+    "pause_enabled": "1",
+    "max_pause_minutes": "60",
+    "dashboard_title": "You are online",
+    "dashboard_message": "",
+    "sounds_enabled": "1",
+    "sound_volume": "80",
+    "low_time_seconds": "60",
+    "snd_coin": "", "snd_connected": "", "snd_low_time": "",
+    "snd_expired": "", "snd_paused": "", "snd_resumed": "",
+}
+
+SOUND_EVENTS = {
+    "coin": "Coin counted",
+    "connected": "Connected / time added",
+    "low_time": "Time almost over",
+    "expired": "Time is up",
+    "paused": "Session paused",
+    "resumed": "Session resumed",
 }
 
 DEFAULT_RATES = [(1, 10), (5, 60), (10, 150), (20, 300)]

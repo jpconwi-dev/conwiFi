@@ -7,6 +7,12 @@ SQLite accounting, nftables access control, dnsmasq DHCP, tc speed limits, syste
 > with real nftables/tc/dnsmasq, a phone, or a coin acceptor. Follow `tests/hardware/checklist.md` before charging customers.
 > The coin input is intentionally disabled until you verify the wiring (`docs/HARDWARE.md`).
 
+## Customer experience
+Mobile-first portal (iOS Safari and its captive-portal mini browser, Android Chrome): big countdown ring, one-tap Insert coin / Add time,
+Pause and Resume, rates as cards, swipeable pictures chosen by you, optional sound effects with a mute button. Admin controls everything
+under **Pictures & sounds** (pictures, dashboard title/message, sounds) and **System** (pause on/off and longest pause).
+Phones only allow audio after the first tap on the page, and iPhones cannot play OGG: use MP3 or M4A.
+
 ## Architecture
 ```
 Internet - source router - [Pi built-in Ethernet = WAN] Orange Pi [USB Ethernet = LAN] - WiFi router (AP/bridge) - customers
@@ -33,16 +39,22 @@ Expiry timestamps live in SQLite. The Orange Pi One has **no real-time clock**, 
 The monitor records a heartbeat every cycle; if the clock is behind it (or before `min_valid_epoch`) all customers are blocked and nothing is deleted until the time is sane
 (NTP, or confirm manually with `sudo jp-pisowifi trust-clock`). Power-off time counts against sessions. A DS3231 RTC module or a small UPS is strongly recommended.
 
-## Quick start on Windows (simulation)
+## Quick start on Windows (simulation, PowerShell)
+Keep the project outside OneDrive if you can (SQLite files and cloud sync do not mix); at minimum point `data_dir` outside it as below.
 ```
-py -m venv .venv && .venv\Scripts\activate
+cd C:\path\to\JP-PisoWiFi
+python -m venv .venv
+.venv\Scripts\Activate.ps1          # if blocked: Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 pip install -r requirements.txt
-set JP_PISOWIFI_CONFIG=config\config.example.json
-py -m backend.cli init           & prints the admin password
-py -c "from backend.app import create_app; create_app().run(port=8080)"
+New-Item -ItemType Directory C:\jp-data -Force
+Copy-Item config\config.example.json config\config.local.json
+(Get-Content config\config.local.json) -replace '"data_dir": "./data"','"data_dir": "C:/jp-data"' | Set-Content config\config.local.json
+python -m backend.cli init           # prints the admin password
+python -c "from backend.app import create_app; create_app().run(port=8080)"
 ```
 Open http://127.0.0.1:8080/ (portal, with simulated coin buttons; add `?sim=2` to act as another customer) and http://127.0.0.1:8080/admin.
-Run tests: `py -m unittest discover -s tests -p "test_*.py" -t .`
+Run tests: `python -m unittest discover -s tests -p "test_*.py" -t .`
+(Windows PowerShell 5.1 has no `&&`; run the commands one per line.)
 
 ## Install on the Orange Pi
 ```

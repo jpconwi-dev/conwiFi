@@ -8,7 +8,7 @@ from backend import auth, clock, database
 class MigrationTests(TempEnv):
     def test_migrations_are_idempotent_and_versioned(self):
         self.assertEqual(database.migrate(self.conn), [])
-        self.assertGreaterEqual(database.schema_version(self.conn), 2)
+        self.assertGreaterEqual(database.schema_version(self.conn), 3)
 
     def test_new_migration_is_applied_once_and_data_survives(self):
         self.conn.execute("INSERT INTO clients(mac,first_seen,last_seen) VALUES('aa:aa:aa:aa:aa:aa',1,1)")
@@ -16,8 +16,8 @@ class MigrationTests(TempEnv):
         (base / "migrations").mkdir(parents=True)
         (base / "schema.sql").write_text((Path(database.ROOT) / "database" / "schema.sql").read_text())
         (base / "migrations" / "002_payments_status_index.sql").write_text("SELECT 1;")
-        (base / "migrations" / "003_extra.sql").write_text("CREATE TABLE extra_t(id INTEGER);")
-        self.assertEqual(database.migrate(self.conn, base), [3])
+        (base / "migrations" / "004_extra.sql").write_text("CREATE TABLE extra_t(id INTEGER);")
+        self.assertEqual(database.migrate(self.conn, base), [4])
         self.assertEqual(database.migrate(self.conn, base), [])
         self.assertEqual(self.conn.execute("SELECT COUNT(*) FROM clients").fetchone()[0], 1)
 
@@ -26,11 +26,11 @@ class MigrationTests(TempEnv):
         (base / "migrations").mkdir(parents=True)
         (base / "schema.sql").write_text((Path(database.ROOT) / "database" / "schema.sql").read_text())
         (base / "migrations" / "002_payments_status_index.sql").write_text("SELECT 1;")
-        (base / "migrations" / "003_bad.sql").write_text("CREATE TABLE ok_t(id INTEGER); THIS IS NOT SQL;")
+        (base / "migrations" / "004_bad.sql").write_text("CREATE TABLE ok_t(id INTEGER); THIS IS NOT SQL;")
         with self.assertRaises(Exception):
             database.migrate(self.conn, base)
         self.assertIsNone(self.conn.execute("SELECT name FROM sqlite_master WHERE name='ok_t'").fetchone())
-        self.assertEqual(database.schema_version(self.conn), 2)
+        self.assertEqual(database.schema_version(self.conn), 3)
 
     def test_seed_does_not_overwrite_or_reseed_rates(self):
         database.set_setting(self.conn, "business_name", "My Shop")

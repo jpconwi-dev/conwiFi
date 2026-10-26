@@ -1,39 +1,75 @@
 {% extends "base.html" %}
 {% block content %}
-<p class="tagline">{{ S.tagline }}</p>
-<p class="small">WiFi network: <strong>{{ S.wifi_name }}</strong></p>
+<header class="bar">
+  {% if S.logo_file %}<img class="logo" src="{{ url_for('uploads', name=S.logo_file) }}" alt="">{% endif %}
+  <div class="who"><h1>{{ S.business_name }}</h1><p class="wifi">WiFi: <strong>{{ S.wifi_name }}</strong></p></div>
+  <button id="btn-sound" class="icon" aria-pressed="false" aria-label="Sound on" hidden>&#128266;</button>
+</header>
 
-<section id="banner" class="banner" hidden role="status"></section>
+<p id="banner" class="banner" role="status" aria-live="polite" hidden></p>
 
-{% include "client_dashboard.html" %}
+<section class="hero" id="hero" data-state="idle">
+  <div class="ring">
+    <svg viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+      <circle class="ring-bg" cx="60" cy="60" r="52"></circle>
+      <circle class="ring-fg" id="ring-fg" cx="60" cy="60" r="52" transform="rotate(-90 60 60)"
+              stroke-dasharray="326.73" stroke-dashoffset="326.73"></circle>
+    </svg>
+    <div class="ring-text">
+      <span class="ring-label" id="hero-label">Not connected</span>
+      <span class="ring-time" id="hero-time">--:--</span>
+      <span class="ring-sub" id="hero-sub">Insert a coin to start</span>
+    </div>
+  </div>
 
-<section class="panel" id="buy">
+  <div class="actions">
+    <div id="coin-active" class="slotbox" hidden>
+      <p><strong>Coin slot is ready.</strong> Insert your coin now: <span id="claim-left">30</span>s</p>
+      <div class="track"><div id="claim-bar"></div></div>
+      <button id="btn-cancel" class="btn">Done</button>
+    </div>
+    <button id="btn-start" class="btn primary">Insert coin</button>
+    <button id="btn-pause" class="btn" hidden>Pause time</button>
+    <button id="btn-resume" class="btn primary" hidden>Resume</button>
+  </div>
+</section>
+
+<section class="panel dash" id="dash" hidden>
+  <h2>{{ S.dashboard_title }}</h2>
+  {% if S.dashboard_message %}<p class="msg">{{ S.dashboard_message }}</p>{% endif %}
+  <dl class="facts">
+    <div><dt>Status</dt><dd id="f-status">-</dd></div>
+    <div><dt>Ends at</dt><dd id="f-ends">-</dd></div>
+    <div id="f-speed-row" hidden><dt>Speed limit</dt><dd id="f-speed">-</dd></div>
+  </dl>
+  {% set gallery = dash_imgs %}{% include "_gallery.html" %}
+  <button id="btn-end" class="btn quiet">End session</button>
+  <div id="confirm-end" class="confirm" hidden>
+    <p>End your session now? Your remaining time will be lost.</p>
+    <button id="confirm-yes" class="btn danger">Yes, end it</button>
+    <button id="confirm-no" class="btn">Keep my time</button>
+  </div>
+</section>
+
+<div id="portal-gallery">{% set gallery = portal_imgs %}{% include "_gallery.html" %}</div>
+
+<section class="panel">
   <h2>Rates</h2>
   <ul class="rates">
-    {% for r in rates %}
-    <li><span class="price">{{ S.currency }}{{ r.amount }}</span><span class="mins">{{ (r.minutes * 60)|dur }}</span></li>
-    {% else %}
-    <li>No rates are configured yet.</li>
-    {% endfor %}
+    {% for r in rates %}<li><span class="price">{{ S.currency }}{{ r.amount }}</span><span class="dur">{{ r.minutes|mins }}</span></li>
+    {% else %}<li class="none">No rates are set yet.</li>{% endfor %}
   </ul>
-  <div id="coin-idle">
-    <button id="btn-start" class="primary">Insert coin</button>
-  </div>
-  <div id="coin-active" hidden>
-    <p class="slot">Coin slot is open for you: <strong id="claim-left">30</strong>s</p>
-    <p>Drop your coins now. Time is added as each coin is counted.</p>
-    <button id="btn-cancel" class="ghost">Done</button>
-  </div>
-  <div id="sim-panel" hidden>
-    <p class="small">Simulated coins:</p>
-    <div id="sim-buttons"></div>
-  </div>
-  <p class="instr">{{ S.instructions }}</p>
 </section>
 
-<section class="panel small" id="net-status">
-  <span>Internet: <strong id="inet">checking</strong></span>
-  <button id="btn-check" class="ghost">Check connection</button>
-</section>
+{% if st.simulation %}
+<section class="panel" id="sim-panel"><h2>Test coins</h2><div id="sim-buttons"></div></section>
+{% endif %}
+
+<details class="panel help">
+  <summary>How it works</summary>
+  <p class="instr">{{ S.instructions }}</p>
+</details>
+
+<p class="chip"><span class="dot" id="dot"></span><span id="inet">Checking connection</span></p>
 {% endblock %}
 {% block scripts %}<script src="{{ url_for('static', filename='js/portal.js') }}"></script>{% endblock %}

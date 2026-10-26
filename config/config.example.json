@@ -20,7 +20,8 @@
     "debounce_ms": 20,
     "pulse_timeout_ms": 400,
     "claim_seconds": 30,
-    "hardware_verified": false
+    "hardware_verified": false,
+    "test_mode": false
   },
   "update": {
     "repo_url": "",
