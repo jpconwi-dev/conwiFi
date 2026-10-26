@@ -32,6 +32,6 @@
 <button class="primary">Save</button></form>
 <p class="hint">Limits are applied per client IP with Linux traffic control and have not been validated on hardware yet.</p></section>
 <section class="card"><h2>Settings that live on the external WiFi router (not here)</h2>
-<ul><li>WiFi name (SSID), password and radio channel</li><li>AP/bridge mode, its DHCP server must be OFF</li><li>Its own management IP (use an address outside the DHCP range)</li><li>Client isolation must be OFF or customers cannot reach the portal</li></ul></section>
+<ul><li>WiFi name (SSID, currently shown to customers as <strong>{{ S.wifi_name }}</strong>), password and radio channel. Change the label under Branding, and the real broadcast name in the router.</li><li>AP/bridge mode, its DHCP server must be OFF</li><li>Its own management IP (use an address outside the DHCP range)</li><li>Client isolation must be OFF or customers cannot reach the portal</li></ul></section>
 {% if fw %}<section class="card"><h2>Active firewall rules</h2><pre>{{ fw.ruleset }}</pre></section>{% endif %}
 {% endblock %}

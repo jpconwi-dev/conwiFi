@@ -8,4 +8,5 @@
 - Recovery: clock-trust check, startup reconcile, expiry, maintenance mode.
 - Backups (online), restore, release-based updater with symlink switch and rollback.
 - Installer, systemd services, first-boot script (image not built).
-- 81 automated tests (simulation only; see docs/TESTING.md).
+- WiFi name label (default conwiFi), editable in Branding.
+- 82 automated tests (simulation only; see docs/TESTING.md).

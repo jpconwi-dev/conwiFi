@@ -146,18 +146,31 @@ class AdminTests(AppBase):
         c = self.login()
         t = self.token(c, "/admin/branding")
         c.post("/admin/branding", data={"business_name": "<script>alert(1)</script>", "tagline": "", "currency": "P",
-                                        "instructions": "", "support_contact": "", "primary_color": "#112233",
+                                        "instructions": "", "support_contact": "", "wifi_name": "conwiFi", "primary_color": "#112233",
                                         "background_color": "#000000", "text_color": "#ffffff", "csrf_token": t})
         html = self.c.get("/").data.decode()
         self.assertNotIn("<script>alert(1)</script>", html)
         self.assertIn("&lt;script&gt;", html)
+
+    def test_wifi_name_default_editable_and_validated(self):
+        self.assertIn(b"conwiFi", self.c.get("/").data)
+        c = self.login()
+        t = self.token(c, "/admin/branding")
+        base = {"business_name": "X", "tagline": "", "currency": "P", "instructions": "", "support_contact": "",
+                "wifi_name": "My New WiFi", "primary_color": "#112233", "background_color": "#000000",
+                "text_color": "#ffffff", "csrf_token": t}
+        c.post("/admin/branding", data=base)
+        self.assertIn(b"My New WiFi", self.c.get("/").data)
+        base["wifi_name"] = "x" * 33
+        c.post("/admin/branding", data=base)
+        self.assertEqual(self.conn.execute("SELECT value FROM settings WHERE key='wifi_name'").fetchone()[0], "My New WiFi")
 
     def test_bad_color_and_bad_logo_rejected(self):
         import io
         c = self.login()
         t = self.token(c, "/admin/branding")
         base = {"business_name": "X", "tagline": "", "currency": "P", "instructions": "", "support_contact": "",
-                "primary_color": "red;}body{display:none", "background_color": "#000000", "text_color": "#ffffff", "csrf_token": t}
+                "wifi_name": "conwiFi", "primary_color": "red;}body{display:none", "background_color": "#000000", "text_color": "#ffffff", "csrf_token": t}
         c.post("/admin/branding", data=base)
         self.assertEqual(self.conn.execute("SELECT value FROM settings WHERE key='business_name'").fetchone()[0], "JP-PisoWiFi")
         base["primary_color"] = "#112233"
@@ -171,7 +184,7 @@ class AdminTests(AppBase):
         t = self.token(c, "/admin/branding")
         png = b"\x89PNG\r\n\x1a\n" + b"0" * 50
         c.post("/admin/branding", data={"business_name": "X", "tagline": "", "currency": "P", "instructions": "",
-                                        "support_contact": "", "primary_color": "#112233", "background_color": "#000000",
+                                        "support_contact": "", "wifi_name": "conwiFi", "primary_color": "#112233", "background_color": "#000000",
                                         "text_color": "#ffffff", "csrf_token": t, "logo": (io.BytesIO(png), "l.png")},
                content_type="multipart/form-data")
         self.assertTrue(self.conn.execute("SELECT value FROM settings WHERE key='logo_file'").fetchone()[0].endswith(".png"))

@@ -440,12 +440,17 @@ def create_app(cfg: dict | None = None) -> Flask:
         if request.method == "POST":
             f = request.form
             name = f.get("business_name", "").strip()[:60] or "JP-PisoWiFi"
+            wifi = f.get("wifi_name", "").strip()
+            if not wifi or len(wifi.encode("utf-8")) > 32 or any(ord(ch) < 32 for ch in wifi):
+                flash("WiFi name must be 1-32 bytes with no control characters.", "error")
+                return redirect(url_for("admin_branding"))
             for key in ("primary_color", "background_color", "text_color"):
                 if not HEX_RE.match(f.get(key, "")):
                     flash("Colors must look like #aabbcc.", "error")
                     return redirect(url_for("admin_branding"))
             with tx(conn):
                 set_setting(conn, "business_name", name)
+                set_setting(conn, "wifi_name", wifi)
                 set_setting(conn, "tagline", f.get("tagline", "").strip()[:140])
                 set_setting(conn, "currency", f.get("currency", "\u20b1").strip()[:4] or "\u20b1")
                 set_setting(conn, "instructions", f.get("instructions", "").strip()[:600])

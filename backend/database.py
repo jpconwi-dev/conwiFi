@@ -9,6 +9,7 @@ from .config import ROOT, ensure_dirs, paths
 
 DEFAULT_SETTINGS = {
     "business_name": "JP-PisoWiFi",
+    "wifi_name": "conwiFi",
     "tagline": "Insert coins to access the internet.",
     "currency": "\u20b1",
     "primary_color": "#c4861a",
