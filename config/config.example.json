@@ -24,7 +24,7 @@
     "test_mode": false
   },
   "update": {
-    "repo_url": "",
+    "repo_url": "https://github.com/jpconwi-dev/conwiFi.git",
     "require_signed_tag": false,
     "install_dir": "/opt/jp-pisowifi",
     "keep_releases": 3

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+- GPIO input supports libgpiod v2 (Debian 13 trixie, the image on the first real board) as well as v1; tested only against fake modules.
+- Real GitHub repo URL set in README and example config.
+
 ## 0.2.0 - redesigned portal, pause, pictures and sounds (still untested on hardware)
 - Portal rebuilt mobile-first for iOS and Android: safe-area insets, dynamic viewport height, 48 px touch targets,
   16 px form text (no iOS zoom), readable text colour chosen automatically, no inline script/style (strict CSP),

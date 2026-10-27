@@ -62,7 +62,8 @@ class SimulatedSource:
 
 
 class GpioSource:
-    """libgpiod (v1 Python bindings, Debian package python3-libgpiod). NOT verified on hardware.
+    """libgpiod input. Supports both the v2 Python API (Debian 13 / trixie) and the v1 API (Debian 12).
+    NOT verified on hardware.
 
     Refuses to start unless coin.hardware_verified is true and gpio_line is set, so a wrong pin or
     unsafe wiring is never silently used."""
@@ -79,13 +80,30 @@ class GpioSource:
         except ImportError as e:
             raise RuntimeError("python3-libgpiod is not installed (apt install python3-libgpiod).") from e
         self.gpiod = gpiod
-        self.chip = gpiod.Chip(coin_cfg["gpio_chip"])
-        self.line = self.chip.get_line(int(coin_cfg["gpio_line"]))
-        flags = gpiod.LINE_REQ_FLAG_ACTIVE_LOW if coin_cfg.get("active_low") else 0
-        self.line.request(consumer="jp-pisowifi", type=gpiod.LINE_REQ_EV_RISING_EDGE, flags=flags)
+        self.line_no = int(coin_cfg["gpio_line"])
+        chip = coin_cfg["gpio_chip"]
+        active_low = bool(coin_cfg.get("active_low"))
+        self.v2 = hasattr(gpiod, "request_lines")
+        if self.v2:
+            from gpiod.line import Direction, Edge  # type: ignore
+            path = chip if chip.startswith("/") else "/dev/" + chip
+            self.request = gpiod.request_lines(
+                path, consumer="jp-pisowifi",
+                config={self.line_no: gpiod.LineSettings(direction=Direction.INPUT, edge_detection=Edge.RISING,
+                                                         active_low=active_low)})
+        else:
+            self.chip = gpiod.Chip(chip)
+            self.line = self.chip.get_line(self.line_no)
+            flags = gpiod.LINE_REQ_FLAG_ACTIVE_LOW if active_low else 0
+            self.line.request(consumer="jp-pisowifi", type=gpiod.LINE_REQ_EV_RISING_EDGE, flags=flags)
 
     def read_edges(self, timeout: float):
         out = []
+        if self.v2:
+            if self.request.wait_edge_events(timeout):
+                for _ev in self.request.read_edge_events():
+                    out.append(time.monotonic())
+            return out
         if self.line.event_wait(sec=int(timeout), nsec=int((timeout % 1) * 1e9)):
             while self.line.event_wait(sec=0, nsec=0):
                 self.line.event_read()
@@ -94,8 +112,11 @@ class GpioSource:
 
     def close(self):
         try:
-            self.line.release()
-            self.chip.close()
+            if self.v2:
+                self.request.release()
+            else:
+                self.line.release()
+                self.chip.close()
         except Exception:  # noqa: BLE001
             pass
 

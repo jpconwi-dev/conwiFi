@@ -58,8 +58,9 @@ Run tests: `python -m unittest discover -s tests -p "test_*.py" -t .`
 
 ## Install on the Orange Pi
 ```
-git clone https://github.com/YOUR_USERNAME/JP-PisoWiFi.git
-cd JP-PisoWiFi
+sudo apt install -y git
+git clone https://github.com/jpconwi-dev/conwiFi.git
+cd conwiFi
 sudo ./installer/install.sh            # add --wan <builtin> --lan <usb> if detection is ambiguous
 ```
 Read `docs/NETWORK.md` first (AP setup, SSH over the WAN side, subnet conflicts). Installer options: `--yes`, `--simulation`, `--force`.
