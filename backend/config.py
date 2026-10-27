@@ -19,6 +19,9 @@ DEFAULTS = {
     "network": {
         "wan_iface": "",
         "lan_iface": "",
+        "lan_mode": "ethernet",
+        "wifi_country": "PH",
+        "hostapd_conf": "/etc/jp-pisowifi/hostapd.conf",
         "lan_ip": "10.0.0.1",
         "lan_prefix": 24,
         "dhcp_start": "10.0.0.50",

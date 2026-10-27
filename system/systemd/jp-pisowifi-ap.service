@@ -1,0 +1,18 @@
+[Unit]
+Description=JP-PisoWiFi WiFi access point (hostapd on the USB adapter)
+After=network.target
+Before=jp-pisowifi-network.service
+
+[Service]
+Type=simple
+Environment=JP_PISOWIFI_CONFIG=/etc/jp-pisowifi/config.json
+WorkingDirectory=/opt/jp-pisowifi/current
+ExecStartPre=-/usr/sbin/rfkill unblock wlan
+# Rebuild hostapd.conf from the admin settings so changes survive reboots. Exit 2 = LAN is not WiFi.
+ExecStartPre=/opt/jp-pisowifi/venv/bin/python -m backend.cli wifi-render
+ExecStart=/usr/sbin/hostapd /etc/jp-pisowifi/hostapd.conf
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

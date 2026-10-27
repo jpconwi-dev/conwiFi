@@ -11,13 +11,14 @@ echo "=== first boot $(date -Is) ==="
 cd /opt/jp-pisowifi/current || exit 1
 /opt/jp-pisowifi/current/installer/detect_hardware.sh
 if [ ! -f "$CONF" ]; then
-  if out="$(/opt/jp-pisowifi/current/installer/detect_network.sh)"; then
+  if out="$(bash /opt/jp-pisowifi/current/installer/detect_network.sh)"; then
     eval "$out"
-    $PY - "$CONF" "$WAN" "$LAN" <<'PY'
+    $PY - "$CONF" "$WAN" "$LAN" "${MODE:-ethernet}" <<'PY'
 import json, sys
 cfg = json.load(open("/opt/jp-pisowifi/current/config/config.example.json"))
 cfg["data_dir"] = "/var/lib/jp-pisowifi"; cfg["simulation_mode"] = False
 cfg["network"]["wan_iface"], cfg["network"]["lan_iface"] = sys.argv[2], sys.argv[3]
+cfg["network"]["lan_mode"] = sys.argv[4]
 json.dump(cfg, open(sys.argv[1], "w"), indent=2)
 PY
   else

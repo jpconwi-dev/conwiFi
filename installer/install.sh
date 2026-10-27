@@ -12,12 +12,13 @@ CONF=$CONF_DIR/config.json
 VENV=$INSTALL_DIR/venv
 LOG=/var/log/jp-pisowifi-install.log
 SVC_USER=jp-pisowifi
-ASSUME_YES=0; FORCE=0; SIM=0; WAN=""; LAN=""
+ASSUME_YES=0; FORCE=0; SIM=0; WAN=""; LAN=""; MODE=""; WIFIFLAG=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --yes|-y) ASSUME_YES=1;; --force) FORCE=1;; --simulation) SIM=1;;
     --wan) WAN="$2"; shift;; --lan) LAN="$2"; shift;;
+    --wifi-ap) MODE=wifi; WIFIFLAG=--wifi-ap;; --ethernet-lan) MODE=ethernet;;
     -h|--help) sed -n '2,3p' "$0"; exit 0;;
     *) echo "Unknown option $1"; exit 2;;
   esac; shift
@@ -26,6 +27,8 @@ done
 [ "$(id -u)" -eq 0 ] || { echo "Run as root: sudo ./installer/install.sh"; exit 1; }
 mkdir -p "$(dirname "$LOG")"; exec > >(tee -a "$LOG") 2>&1
 echo "=== JP-PisoWiFi $VERSION install $(date -Is) ==="
+# files copied from Windows/zip may have lost the executable bit
+chmod +x "$REPO_DIR"/installer/*.sh "$REPO_DIR"/scripts/*.sh "$REPO_DIR"/scripts/jp-pisowifi 2>/dev/null || true
 
 say()  { echo; echo "--> $*"; }
 ask()  { [ "$ASSUME_YES" -eq 1 ] && return 0; read -r -p "$1 [y/N] " a; [[ "$a" =~ ^[Yy] ]]; }
@@ -33,7 +36,7 @@ fail() { echo "ERROR: $*"; echo "See $LOG. Nothing about your existing WAN conne
 
 # 1. verify OS/board ---------------------------------------------------------
 say "Checking operating system and board"
-set +e; "$REPO_DIR/installer/detect_hardware.sh"; rc=$?; set -e
+set +e; bash "$REPO_DIR/installer/detect_hardware.sh"; rc=$?; set -e
 [ $rc -eq 1 ] && fail "Unsupported operating system (need Debian/Armbian)."
 if [ $rc -eq 2 ]; then ask "This does not look like an Orange Pi One. Continue anyway?" || fail "Aborted by user."; fi
 mem=$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)
@@ -44,12 +47,20 @@ mem=$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)
 say "Selecting network interfaces"
 if [ "$SIM" -eq 0 ]; then
   if [ -z "$WAN" ] || [ -z "$LAN" ]; then
-    if out="$("$REPO_DIR/installer/detect_network.sh")"; then
-      eval "$out"; echo "Auto-detected WAN=$WAN (built-in), LAN=$LAN (USB)"
-      ask "Use these?" || fail "Re-run with --wan IFACE --lan IFACE."
+    if out="$(bash "$REPO_DIR/installer/detect_network.sh" $WIFIFLAG)"; then
+      eval "$out"; echo "Auto-detected WAN=$WAN (built-in), LAN=$LAN ($MODE)"
+      ask "Use these?" || fail "Re-run with --wan IFACE --lan IFACE [--wifi-ap]."
     else
-      fail "Could not unambiguously detect interfaces. Re-run with --wan <builtin> --lan <usb-adapter>."
+      fail "Could not unambiguously detect interfaces. Re-run with --wan <builtin-ethernet> --lan <usb-ethernet-or-wifi-adapter> [--wifi-ap]."
     fi
+  fi
+  if [ -z "$MODE" ]; then
+    if [ -e "/sys/class/net/$LAN/wireless" ] || [ -e "/sys/class/net/$LAN/phy80211" ]; then MODE=wifi; else MODE=ethernet; fi
+  fi
+  if [ "$MODE" = wifi ]; then
+    phy="$(iw dev "$LAN" info 2>/dev/null | awk '/wiphy/ {print "phy"$2}')"
+    iw phy "$phy" info 2>/dev/null | sed -n '/Supported interface modes/,/Band/p' | grep -qE '\* AP$' \
+      || fail "The WiFi adapter $LAN does not report AP mode support."
   fi
   [ -d "/sys/class/net/$WAN" ] || fail "WAN interface $WAN does not exist"
   [ -d "/sys/class/net/$LAN" ] || fail "LAN interface $LAN does not exist"
@@ -67,7 +78,10 @@ say "Installing system packages"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y -qq python3 python3-venv python3-pip python3-libgpiod nftables dnsmasq iproute2 \
-    conntrack git ethtool curl rsync ca-certificates >/dev/null
+    conntrack git ethtool curl rsync ca-certificates hostapd iw rfkill wireless-regdb >/dev/null
+# we run our own hostapd unit; keep the distro one from starting
+systemctl disable --now hostapd >/dev/null 2>&1 || true
+systemctl mask hostapd >/dev/null 2>&1 || true
 grep -rqs '^conf-dir=/etc/dnsmasq.d' /etc/dnsmasq.conf || echo "conf-dir=/etc/dnsmasq.d/,*.conf" >> /etc/dnsmasq.conf
 systemctl enable nftables >/dev/null 2>&1 || true
 
@@ -99,13 +113,14 @@ if [ -f "$CONF" ]; then
   echo "Keeping existing $CONF"
 else
   SIMFLAG=$([ "$SIM" -eq 1 ] && echo true || echo false)
-  "$VENV/bin/python" - "$CONF" "$DATA_DIR" "$SIMFLAG" "$WAN" "$LAN" <<'PY'
+  "$VENV/bin/python" - "$CONF" "$DATA_DIR" "$SIMFLAG" "$WAN" "$LAN" "${MODE:-ethernet}" <<'PY'
 import json, sys
-path, data, sim, wan, lan = sys.argv[1:6]
+path, data, sim, wan, lan, mode = sys.argv[1:7]
 cfg = json.load(open("/opt/jp-pisowifi/current/config/config.example.json"))
 cfg["data_dir"] = data
 cfg["simulation_mode"] = (sim == "true")
 cfg["network"]["wan_iface"], cfg["network"]["lan_iface"] = wan, lan
+cfg["network"]["lan_mode"] = mode
 json.dump(cfg, open(path, "w"), indent=2)
 PY
   chmod 0644 "$CONF"
@@ -147,6 +162,13 @@ for u in "$REL"/system/systemd/jp-pisowifi*.service "$REL"/system/systemd/jp-pis
   install -m 0644 "$u" /etc/systemd/system/
 done
 systemctl daemon-reload
+CFGMODE="$("$VENV/bin/python" -c 'import json;print(json.load(open("/etc/jp-pisowifi/config.json"))["network"].get("lan_mode","ethernet"))')"
+if [ "$SIM" -eq 0 ] && [ "$CFGMODE" = wifi ]; then
+  systemctl enable jp-pisowifi-ap.service
+  systemctl restart jp-pisowifi-ap.service || echo "WARNING: access point failed to start; run: journalctl -u jp-pisowifi-ap"
+else
+  systemctl disable --now jp-pisowifi-ap.service >/dev/null 2>&1 || true
+fi
 if [ "$SIM" -eq 0 ]; then systemctl enable --now jp-pisowifi-network.service || echo "WARNING: network service failed; run: journalctl -u jp-pisowifi-network"; fi
 systemctl enable --now jp-pisowifi.service jp-pisowifi-monitor.service jp-pisowifi-update.path
 systemctl enable jp-pisowifi-coin.service

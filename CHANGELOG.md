@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 - WiFi access point mode
+- New `network.lan_mode = "wifi"`: a USB WiFi adapter (hostapd) is the customer LAN. SSID, open/WPA2 password, band, channel and
+  maximum devices are editable in the admin Network page; the Branding WiFi name is the same setting.
+- Installer: `--wifi-ap`, WiFi adapter detection and AP-mode check, hostapd/iw/rfkill/wireless-regdb, `jp-pisowifi-ap` service,
+  scripts are made executable automatically (files from Windows lose the executable bit), `.gitattributes` keeps LF line endings.
+- The WiFi password is never rendered in any page, log or audit entry; hostapd.conf is root-only (0600).
+- 132 automated tests (simulation and fake sysfs only; hostapd on real hardware is untested).
+
 ## 0.2.1
 - GPIO input supports libgpiod v2 (Debian 13 trixie, the image on the first real board) as well as v1; tested only against fake modules.
 - Real GitHub repo URL set in README and example config.

@@ -12,13 +12,14 @@ try:
 except ImportError:  # Windows development machine
     grp = None
 
-from . import auth, backup_service, client_service, clock, network_service as ns, payment_service, updater
+from . import auth, backup_service, client_service, clock, network_service as ns, payment_service, updater, wifi_service
 from .config import VERSION, load_config, paths
 from .database import (connect, get_setting, init_db, integrity_ok, log_event, migrate, schema_version,
                        set_setting)
 from .recovery_service import startup_recovery, trust_clock_now
 
 SERVICES = ["jp-pisowifi", "jp-pisowifi-monitor", "jp-pisowifi-coin", "dnsmasq"]
+AP_SERVICE = "jp-pisowifi-ap"
 
 
 def fix_permissions(cfg):
@@ -48,6 +49,9 @@ def health_checks(cfg, conn):
         for s in SERVICES:
             r = subprocess.run(["systemctl", "is-active", s], capture_output=True, text=True)
             add(f"service {s}", r.stdout.strip() == "active", s != "jp-pisowifi-coin", r.stdout.strip())
+        if cfg["network"].get("lan_mode") == "wifi":
+            r = subprocess.run(["systemctl", "is-active", AP_SERVICE], capture_output=True, text=True)
+            add(f"service {AP_SERVICE}", r.stdout.strip() == "active", True, r.stdout.strip())
         fw = ns.firewall_status()
         add("firewall table loaded", fw["loaded"], True)
         n = ns.effective_network(conn, cfg)
@@ -139,7 +143,10 @@ def cmd_network_up(cfg, a):
     conn = init_db(cfg)
     n = ns.effective_network(conn, cfg)
     if not n.get("wan_iface") or not n.get("lan_iface"):
-        w, l, note = ns.pick_interfaces(ns.detect_interfaces())
+        if n.get("lan_mode") == "wifi":
+            w, l, note = ns.pick_wifi_lan(ns.detect_interfaces(), ns.detect_wifi_adapters())
+        else:
+            w, l, note = ns.pick_interfaces(ns.detect_interfaces())
         print("Interfaces not configured;", note)
         if not (w and l):
             return 2
@@ -159,8 +166,27 @@ def cmd_firewall_restore(cfg, a):
 
 def cmd_detect(cfg, a):
     ifs = ns.detect_interfaces()
-    print(json.dumps(ifs, indent=2))
-    print(ns.pick_interfaces(ifs)[2])
+    wifis = ns.detect_wifi_adapters()
+    print("Ethernet:", json.dumps(ifs, indent=2))
+    print("WiFi adapters:", json.dumps(wifis, indent=2))
+    print("Ethernet LAN:", ns.pick_interfaces(ifs)[2])
+    print("WiFi AP LAN :", ns.pick_wifi_lan(ifs, wifis)[2])
+    for w in wifis:
+        print(f"{w['name']}: supports AP mode = {wifi_service.adapter_supports_ap(w['name'])}")
+    return 0
+
+
+def cmd_wifi_render(cfg, a):
+    conn = init_db(cfg)
+    n = ns.effective_network(conn, cfg)
+    if n.get("lan_mode") != "wifi":
+        print("network.lan_mode is not 'wifi'; nothing to render.", file=sys.stderr)
+        return 2
+    try:
+        print(wifi_service.write_config(cfg, conn, n))
+    except ValueError as e:
+        print("Invalid WiFi settings:", e, file=sys.stderr)
+        return 1
     return 0
 
 
@@ -223,7 +249,7 @@ COMMANDS = {
     "update-from-request": cmd_update_from_request, "network-up": cmd_network_up,
     "firewall-restore": cmd_firewall_restore, "detect": cmd_detect, "reset-admin-password": cmd_reset_password,
     "admin-allow-mac": cmd_admin_allow_mac, "trust-clock": cmd_trust_clock, "sim-coin": cmd_sim_coin,
-    "recover": cmd_recover,
+    "recover": cmd_recover, "wifi-render": cmd_wifi_render,
 }
 
 

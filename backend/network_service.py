@@ -42,6 +42,34 @@ def detect_interfaces(sys_net="/sys/class/net") -> list[dict]:
     return out
 
 
+def detect_wifi_adapters(sys_net="/sys/class/net") -> list[dict]:
+    out = []
+    base = Path(sys_net)
+    if not base.exists():
+        return out
+    for p in sorted(base.iterdir()):
+        if not ((p / "wireless").exists() or (p / "phy80211").exists()):
+            continue
+        try:
+            real = str((p / "device").resolve()) if (p / "device").exists() else ""
+            drv = p / "device" / "driver"
+            out.append({"name": p.name, "mac": (p / "address").read_text().strip(), "usb": "/usb" in real,
+                        "driver": drv.resolve().name if drv.exists() else "",
+                        "up": (p / "operstate").read_text().strip()})
+        except OSError:
+            continue
+    return out
+
+
+def pick_wifi_lan(ifaces: list[dict], wifis: list[dict]) -> tuple[str | None, str | None, str]:
+    """WAN = the single built-in Ethernet, LAN = the single (preferably USB) WiFi adapter."""
+    builtin = [i for i in ifaces if not i["usb"]]
+    cand = [w for w in wifis if w["usb"]] or wifis
+    if len(builtin) == 1 and len(cand) == 1:
+        return builtin[0]["name"], cand[0]["name"], "auto-detected"
+    return None, None, f"ambiguous ({len(builtin)} built-in Ethernet, {len(wifis)} WiFi adapters): select manually"
+
+
 def pick_interfaces(ifaces: list[dict]) -> tuple[str | None, str | None, str]:
     """Return (wan, lan, note). Only auto-picks when unambiguous: one built-in + one USB."""
     builtin = [i for i in ifaces if not i["usb"]]
@@ -74,6 +102,8 @@ def validate_network(net: dict) -> list[str]:
             ipaddress.ip_address(d)
         except ValueError:
             errs.append(f"Invalid DNS server: {d}")
+    if net.get("lan_mode", "ethernet") not in ("ethernet", "wifi"):
+        errs.append("lan_mode must be 'ethernet' or 'wifi'.")
     if net.get("wan_iface") and net.get("wan_iface") == net.get("lan_iface"):
         errs.append("WAN and LAN interfaces must be different.")
     return errs
@@ -242,6 +272,10 @@ def apply_network(cfg: dict) -> list[str]:
     if cfg["simulation_mode"]:
         return []
     lan = net["lan_iface"]
+    if net.get("lan_mode") == "wifi":
+        from . import wifi_service
+        if not wifi_service.wait_for_ap(lan):
+            return [f"The WiFi access point is not running on {lan} (check: systemctl status jp-pisowifi-ap)"]
     _sh(["ip", "link", "set", lan, "up"])
     _sh(["ip", "addr", "flush", "dev", lan])
     _sh(["ip", "addr", "add", f"{net['lan_ip']}/{net['lan_prefix']}", "dev", lan])

@@ -10,6 +10,11 @@ from .config import ROOT, ensure_dirs, paths
 DEFAULT_SETTINGS = {
     "business_name": "JP-PisoWiFi",
     "wifi_name": "conwiFi",
+    "wifi_password": "",
+    "wifi_band": "2.4",
+    "wifi_channel": "6",
+    "wifi_max_clients": "30",
+    "wifi_apply_requested": "0",
     "tagline": "Insert coins to access the internet.",
     "currency": "\u20b1",
     "primary_color": "#c4861a",

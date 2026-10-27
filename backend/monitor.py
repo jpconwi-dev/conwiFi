@@ -3,10 +3,11 @@ roll back unconfirmed network changes."""
 import json
 import os
 import signal
+import subprocess
 import sys
 import time
 
-from . import backup_service, clock, client_service, network_service as ns
+from . import backup_service, clock, client_service, network_service as ns, wifi_service
 from .bandwidth_service import BandwidthManager
 from .config import load_config, paths
 from .database import get_setting, init_db, log_event, set_setting
@@ -32,6 +33,21 @@ def tick(conn, cfg, backend, bw, state, now_mono=None):
                   "Network change failed: " + "; ".join(errs) if errs else "Network change applied (awaiting confirmation)")
         bw.lan = ns.effective_network(conn, cfg).get("lan_iface") or bw.lan
         bw.reset()
+    if get_setting(conn, "wifi_apply_requested", "0") == "1":
+        set_setting(conn, "wifi_apply_requested", "0")
+        net = ns.effective_network(conn, cfg)
+        if net.get("lan_mode") == "wifi" and not cfg["simulation_mode"]:
+            try:
+                wifi_service.write_config(cfg, conn, net)
+                subprocess.run(["systemctl", "restart", "jp-pisowifi-ap"], capture_output=True)
+                errs = ns.apply_network({**cfg, "network": net})
+                log_event(conn, "error" if errs else "info", "wifi",
+                          "WiFi change failed: " + "; ".join(errs) if errs else "WiFi settings applied; customers reconnect")
+                bw.reset()
+            except (ValueError, OSError) as e:
+                log_event(conn, "error", "wifi", f"WiFi change failed: {e}")
+        else:
+            log_event(conn, "info", "wifi", "WiFi change recorded (simulation or Ethernet LAN: nothing to apply)")
     p = ns.rollback_due(conn, clock.now())
     if p:
         set_setting(conn, "network_override", json.dumps(p["previous"]))

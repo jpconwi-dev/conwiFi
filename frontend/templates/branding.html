@@ -6,7 +6,7 @@
 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 <label>Business name <input name="business_name" value="{{ S.business_name }}" maxlength="60" required></label>
 <label>WiFi name (SSID) shown to customers <input name="wifi_name" value="{{ S.wifi_name }}" maxlength="32" required></label>
-<p class="hint">This is the name customers are told to join. It does <strong>not</strong> change the broadcast name by itself: set the same SSID in your WiFi router's own settings (see Network page). If you rename it on the router, update it here too.</p>
+<p class="hint">{% if net_wifi %}This is the real WiFi name. Changing it restarts the access point and customers reconnect (set password and channel on the Network page).{% else %}This is the name customers are told to join. It does <strong>not</strong> change the broadcast name by itself: set the same SSID in your WiFi router's own settings (see Network page). If you rename it on the router, update it here too.{% endif %}</p>
 <label>Tagline <input name="tagline" value="{{ S.tagline }}" maxlength="140"></label>
 <label>Currency symbol <input name="currency" value="{{ S.currency }}" maxlength="4"></label>
 <label>Instructions shown to customers <textarea name="instructions" rows="4" maxlength="600">{{ S.instructions }}</textarea></label>

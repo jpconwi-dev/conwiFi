@@ -17,7 +17,7 @@ from flask import (Flask, Response, abort, flash, g, jsonify, redirect, render_t
                    send_from_directory, session, url_for)
 
 from . import (auth, backup_service, client_service, clock, network_service as ns, payment_service,
-               reporting_service as rep, session_service)
+               reporting_service as rep, session_service, wifi_service)
 from .config import ROOT, VERSION, load_config, paths, secret_key
 from .database import (SOUND_EVENTS, all_settings, connect, get_setting, init_db, log_event, set_setting, tx)
 
@@ -196,6 +196,7 @@ def create_app(cfg: dict | None = None) -> Flask:
     @app.context_processor
     def inject():
         s = all_settings(db())
+        s.pop("wifi_password", None)  # never reaches any template
         return {"S": s, "csrf_token": session.get("csrf", ""), "version": VERSION,
                 "sim_mode": cfg["simulation_mode"], "test_mode": test_mode, "admin": current_admin()}
 
@@ -556,9 +557,12 @@ def create_app(cfg: dict | None = None) -> Flask:
                 if not HEX_RE.match(f.get(key, "")):
                     flash("Colors must look like #aabbcc.", "error")
                     return redirect(url_for("admin_branding"))
+            old_wifi = get_setting(conn, "wifi_name", "")
             with tx(conn):
                 set_setting(conn, "business_name", name)
                 set_setting(conn, "wifi_name", wifi)
+                if wifi != old_wifi and net().get("lan_mode") == "wifi":
+                    wifi_service.request_apply(conn)
                 set_setting(conn, "tagline", f.get("tagline", "").strip()[:140])
                 set_setting(conn, "currency", f.get("currency", "\u20b1").strip()[:4] or "\u20b1")
                 set_setting(conn, "instructions", f.get("instructions", "").strip()[:600])
@@ -582,7 +586,7 @@ def create_app(cfg: dict | None = None) -> Flask:
             audit("branding_update")
             flash("Branding saved.", "ok")
             return redirect(url_for("admin_branding"))
-        return render_template("branding.html")
+        return render_template("branding.html", net_wifi=net().get("lan_mode") == "wifi")
 
     @app.route("/admin/network", methods=["GET", "POST"])
     @admin_required
@@ -608,6 +612,36 @@ def create_app(cfg: dict | None = None) -> Flask:
                     audit("network_stage", json.dumps(changes))
                     flash(f"Change staged. Reconnect using the new address and press Confirm within "
                           f"{cfg['network']['confirm_seconds']} seconds or it will be rolled back.", "ok")
+            elif act == "wifi":
+                if net().get("lan_mode") != "wifi":
+                    flash("This installation uses an Ethernet LAN, so WiFi settings are on your router.", "error")
+                else:
+                    f = request.form
+                    ssid = f.get("ssid", "").strip()
+                    open_net = bool(f.get("open_network"))
+                    password = "" if open_net else (f.get("password", "") or get_setting(conn, "wifi_password", ""))
+                    try:
+                        band, chan = f.get("chan", "2.4:6").split(":")
+                        chan = int(chan)
+                    except ValueError:
+                        band, chan = "", 0
+                    maxc = int_field("max_clients", 1, 100, 0)
+                    errs = wifi_service.validate_wifi(ssid, password, band, chan, maxc or 0)
+                    if not open_net and not password:
+                        errs.append("Enter a password, or tick 'Open network (no password)'.")
+                    if errs:
+                        for e in errs:
+                            flash(e, "error")
+                    else:
+                        with tx(conn):
+                            set_setting(conn, "wifi_name", ssid)
+                            set_setting(conn, "wifi_password", password)
+                            set_setting(conn, "wifi_band", band)
+                            set_setting(conn, "wifi_channel", chan)
+                            set_setting(conn, "wifi_max_clients", maxc)
+                            wifi_service.request_apply(conn)
+                        audit("wifi_update", f"ssid={ssid} band={band} channel={chan} open={not password} max={maxc}")
+                        flash("WiFi settings saved. The access point restarts within a few seconds and customers reconnect automatically.", "ok")
             elif act == "speed":
                 with tx(conn):
                     set_setting(conn, "default_down_kbps", int_field("down", 0, 1000000, 0))
@@ -617,7 +651,11 @@ def create_app(cfg: dict | None = None) -> Flask:
             return redirect(url_for("admin_network"))
         pending = get_setting(conn, "network_pending", "")
         deadline = json.loads(pending)["deadline"] if pending else None
+        wifi_mode = net().get("lan_mode") == "wifi"
+        ws = wifi_service.settings_from_db(conn) if wifi_mode else None
         return render_template("network_settings.html", net=net(), ifaces=ns.detect_interfaces(),
+                               wifi_mode=wifi_mode, wifi=ws, wifi_has_password=bool(ws and ws["password"]),
+                               channels=wifi_service.CHANNELS, adapters=ns.detect_wifi_adapters(),
                                pending_left=(deadline - clock.now()) if deadline else None,
                                fw=ns.firewall_status() if not cfg["simulation_mode"] else None)
 
@@ -662,7 +700,7 @@ def create_app(cfg: dict | None = None) -> Flask:
         svc = {}
         if not cfg["simulation_mode"]:
             import subprocess
-            for s in SERVICES:
+            for s in SERVICES + (["jp-pisowifi-ap"] if net().get("lan_mode") == "wifi" else []):
                 r = subprocess.run(["systemctl", "is-active", s], capture_output=True, text=True)
                 svc[s] = r.stdout.strip() or "unknown"
         return render_template(

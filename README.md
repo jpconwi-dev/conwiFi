@@ -7,6 +7,10 @@ SQLite accounting, nftables access control, dnsmasq DHCP, tc speed limits, syste
 > with real nftables/tc/dnsmasq, a phone, or a coin acceptor. Follow `tests/hardware/checklist.md` before charging customers.
 > The coin input is intentionally disabled until you verify the wiring (`docs/HARDWARE.md`).
 
+## WiFi options
+Either an external router in AP/bridge mode with a USB Ethernet adapter, or (new in 0.3.0) a USB WiFi adapter such as the Alfa AWUS036ACM used as the access
+point by the Pi itself (`sudo bash installer/install.sh --wifi-ap`), which lets the admin panel change the real SSID, password and channel. See `docs/NETWORK.md`.
+
 ## Customer experience
 Mobile-first portal (iOS Safari and its captive-portal mini browser, Android Chrome): big countdown ring, one-tap Insert coin / Add time,
 Pause and Resume, rates as cards, swipeable pictures chosen by you, optional sound effects with a mute button. Admin controls everything
@@ -61,7 +65,7 @@ Run tests: `python -m unittest discover -s tests -p "test_*.py" -t .`
 sudo apt install -y git
 git clone https://github.com/jpconwi-dev/conwiFi.git
 cd conwiFi
-sudo ./installer/install.sh            # add --wan <builtin> --lan <usb> if detection is ambiguous
+sudo bash installer/install.sh        # add --wan <builtin> --lan <usb> if detection is ambiguous
 ```
 Read `docs/NETWORK.md` first (AP setup, SSH over the WAN side, subnet conflicts). Installer options: `--yes`, `--simulation`, `--force`.
 It is idempotent: it never overwrites `/etc/jp-pisowifi/config.json`, the database, or credentials; re-running refreshes code and units.

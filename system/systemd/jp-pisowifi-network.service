@@ -1,6 +1,6 @@
 [Unit]
 Description=JP-PisoWiFi network (LAN address, forwarding, firewall, DHCP)
-After=network.target local-fs.target
+After=network.target local-fs.target jp-pisowifi-ap.service
 Before=jp-pisowifi.service jp-pisowifi-monitor.service
 Wants=network.target
 

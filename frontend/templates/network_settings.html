@@ -12,6 +12,25 @@
 <table><tr><th>Interface</th><th>MAC</th><th>Type</th><th>State</th></tr>
 {% for i in ifaces %}<tr><td>{{ i.name }}</td><td>{{ i.mac }}</td><td>{{ 'USB' if i.usb else 'built-in' }} ({{ i.driver }})</td><td>{{ i.up }}</td></tr>{% else %}<tr><td colspan="4">None detected (normal in simulation mode).</td></tr>{% endfor %}
 </table></section>
+{% if wifi_mode %}
+<section class="card"><h2>WiFi access point (this Pi)</h2>
+<p class="hint">The USB WiFi adapter ({{ net.lan_iface }}) broadcasts your network. Saving restarts it and everyone reconnects in a few seconds. Active sessions are kept.</p>
+<form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="wifi">
+<label>WiFi name (SSID) <input name="ssid" value="{{ wifi.ssid }}" maxlength="32" required></label>
+<label><input type="checkbox" name="open_network" {{ 'checked' if not wifi.password }}> Open network (no password; customers pay through the portal)</label>
+<label>Password (8-63 characters; leave blank to keep the current one) <input name="password" type="password" autocomplete="new-password" maxlength="63" placeholder="{{ 'unchanged' if wifi_has_password else '' }}"></label>
+<div class="inline">
+<label>Band and channel <select name="chan">
+{% for band, chans in channels.items() %}<optgroup label="{{ band }} GHz">{% for c in chans %}<option value="{{ band }}:{{ c }}" {{ 'selected' if wifi.band == band and wifi.channel == c }}>{{ band }} GHz - channel {{ c }}</option>{% endfor %}</optgroup>{% endfor %}
+</select></label>
+<label>Maximum devices <input name="max_clients" type="number" min="1" max="100" value="{{ wifi.max_clients }}"></label>
+</div>
+<button class="primary" data-confirm-text="Everyone will be disconnected for a few seconds. Continue?">Save WiFi settings</button>
+<p class="hint">One adapter can use only one band at a time. 2.4 GHz (channel 1, 6 or 11) reaches the most phones; 5 GHz is faster but shorter range and not every phone supports it.</p>
+</form>
+<table><tr><th>Adapter</th><th>MAC</th><th>Driver</th><th>State</th></tr>
+{% for a in adapters %}<tr><td>{{ a.name }}</td><td>{{ a.mac }}</td><td>{{ a.driver }}</td><td>{{ a.up }}</td></tr>{% else %}<tr><td colspan="4">None detected (normal in simulation mode).</td></tr>{% endfor %}</table></section>
+{% endif %}
 <section class="card"><h2>Customer LAN (Orange Pi)</h2>
 <form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="lan">
 <div class="inline">
@@ -31,7 +50,7 @@
 <label>Upload kbps (0 = unlimited) <input name="up" type="number" min="0" value="{{ S.default_up_kbps }}"></label>
 <button class="primary">Save</button></form>
 <p class="hint">Limits are applied per client IP with Linux traffic control and have not been validated on hardware yet.</p></section>
-<section class="card"><h2>Settings that live on the external WiFi router (not here)</h2>
+<section class="card"><h2>{{ "Settings that live on your external WiFi router (not here)" if not wifi_mode else "Not used in WiFi access point mode" }}</h2>
 <ul><li>WiFi name (SSID, currently shown to customers as <strong>{{ S.wifi_name }}</strong>), password and radio channel. Change the label under Branding, and the real broadcast name in the router.</li><li>AP/bridge mode, its DHCP server must be OFF</li><li>Its own management IP (use an address outside the DHCP range)</li><li>Client isolation must be OFF or customers cannot reach the portal</li></ul></section>
 {% if fw %}<section class="card"><h2>Active firewall rules</h2><pre>{{ fw.ruleset }}</pre></section>{% endif %}
 {% endblock %}

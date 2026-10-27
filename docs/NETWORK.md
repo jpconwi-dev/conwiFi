@@ -1,4 +1,24 @@
-# Network and WiFi router (AP) setup
+# Network and WiFi setup
+
+Two ways to provide the customer WiFi. Pick one:
+
+## Option A (recommended for 1 USB port): the Pi is the access point (USB WiFi adapter, e.g. Alfa AWUS036ACM)
+```
+Source router --(LAN port)--> Pi built-in Ethernet = WAN
+Pi USB WiFi adapter (hostapd) = customer LAN 10.0.0.1/24 --> customers' phones
+```
+- Needs an adapter whose driver supports AP mode. The AWUS036ACM (MediaTek MT7612U, driver `mt76x2u`) reports `AP` in `iw list` on Armbian trixie.
+- Install with `sudo bash installer/install.sh --wifi-ap` (add `--wan <built-in> --lan <wlx...>` if auto-detection is ambiguous).
+- SSID, open/password, band, channel and maximum devices are changed in the admin panel (Network page). Saving restarts the AP; active sessions are kept and
+  phones reconnect by themselves. The WiFi name in Branding is the same setting.
+- Default is an **open** network (customers pay through the portal). Open means traffic is not encrypted over the air, like any open hotspot; set a password
+  if you prefer, at the cost of customers needing it first.
+- One radio = one band at a time. Use 2.4 GHz channel 1, 6 or 11 for the widest phone support; 5 GHz only offers non-DFS channels 36-48.
+- `ap_isolate=1` is set so customers cannot see each other's devices; the firewall also never forwards LAN to LAN.
+- The Orange Pi One has one USB host port and USB 2.0 speeds. Use a good 5 V 2 A+ supply; a powered hub is better if you add more USB devices.
+- Not verified on hardware yet: hostapd behaviour with your adapter, concurrent-client limits and range. Test with the checklist.
+
+## Option B: external WiFi router in AP/bridge mode + USB Ethernet adapter
 
 ```
 Internet-source router --(LAN port)--> Orange Pi built-in Ethernet = WAN

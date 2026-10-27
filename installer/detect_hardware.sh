@@ -28,6 +28,14 @@ for p in /sys/class/net/*; do
   drv="$(basename "$(readlink -f "$p/device/driver" 2>/dev/null)" 2>/dev/null)"
   echo "   $n  mac=$(cat "$p/address")  type=$bus  driver=${drv:-?}  state=$(cat "$p/operstate")"
 done
+echo "WiFi adapters   :"
+for p in /sys/class/net/*; do
+  n="$(basename "$p")"
+  { [ -e "$p/wireless" ] || [ -e "$p/phy80211" ]; } || continue
+  bus="built-in"; readlink -f "$p/device" 2>/dev/null | grep -q '/usb' && bus="USB"
+  drv="$(basename "$(readlink -f "$p/device/driver" 2>/dev/null)" 2>/dev/null)"
+  echo "   $n  mac=$(cat "$p/address")  type=$bus  driver=${drv:-?}"
+done
 case "${ID:-}" in debian|ubuntu|armbian) ;; *) echo "UNSUPPORTED: OS id '${ID:-unknown}'"; exit 1;; esac
 case "$arch" in armv7l|aarch64|armv8l) ;; *) echo "NOTE: unexpected architecture $arch (target is armv7l)";; esac
 echo "$model" | grep -qi "orange pi one" || { echo "NOTE: board is not reported as an Orange Pi One."; exit 2; }
